@@ -39,12 +39,14 @@ class _TowerDashboardScreenState extends State<TowerDashboardScreen> {
         id: '1',
         name: 'MikroTik Core Router',
         ipAddress: '192.168.88.1',
-        type: DeviceType.mikrotik),
+        type: DeviceType.mikrotik,
+        port: 80),
     TowerDevice(
         id: '2',
         name: 'Ubiquiti Main Link',
         ipAddress: '192.168.1.20',
-        type: DeviceType.ubiquiti),
+        type: DeviceType.ubiquiti,
+        port: 443),
   ];
 
   final List<TowerLocationModel> towerLocations = const [
@@ -63,13 +65,16 @@ class _TowerDashboardScreenState extends State<TowerDashboardScreen> {
   ];
 
   bool isLoading = false;
+  Map<String, String?> networkInfo = {};
 
   Future<void> refreshData() async {
     setState(() => isLoading = true);
     var updatedList = await NetworkService.scanTowerDevices(towerDevices);
+    var info = await NetworkService.getNetworkInfo();
     await GpsService.getCurrentTowerCoordinates();
     setState(() {
       towerDevices = updatedList;
+      networkInfo = info;
       isLoading = false;
     });
   }
@@ -84,7 +89,7 @@ class _TowerDashboardScreenState extends State<TowerDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة الأبراج والراوترات - UniRouter'),
+        title: const Text('إدارة الأبراج - UniRouter'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -99,6 +104,23 @@ class _TowerDashboardScreenState extends State<TowerDashboardScreen> {
               children: [
                 const Padding(
                   padding: EdgeInsets.all(12.0),
+                  child: Text('الشبكة الحالية',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                Card(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: ListTile(
+                    leading: const Icon(Icons.wifi, color: Colors.blue),
+                    title: Text('الشبكة: ${networkInfo['name'] ?? 'غير معروف'}'),
+                    subtitle: Text(
+                        'IP التلفون: ${networkInfo['ip'] ?? '-'}\nالراوتر (Gateway): ${networkInfo['gateway'] ?? '-'}'),
+                    isThreeLine: true,
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(12.0),
                   child: Text('أجهزة ومعدات البرج',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -109,7 +131,8 @@ class _TowerDashboardScreenState extends State<TowerDashboardScreen> {
                       child: ListTile(
                         leading: const Icon(Icons.router, color: Colors.blue),
                         title: Text(device.name),
-                        subtitle: Text('IP: ${device.ipAddress}'),
+                        subtitle:
+                            Text('IP: ${device.ipAddress}  المنفذ: ${device.port}'),
                         trailing: Text(
                           device.isOnline ? 'متصل' : 'غير متصل',
                           style: TextStyle(
